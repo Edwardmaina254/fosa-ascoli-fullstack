@@ -1,0 +1,31 @@
+name: Verify Code
+
+# This tells GitHub to run this script every time someone opens a Pull Request to main
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get the code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Verify Backend (Node/Express)
+      run: |
+        cd server
+        npm install
+        # If you have a test script later, you'd run 'npm test' here
+
+    - name: Verify Frontend (React/Vite)
+      run: |
+        cd client
+        npm install
+        npm run build # This ensures the React code has no syntax errors!
