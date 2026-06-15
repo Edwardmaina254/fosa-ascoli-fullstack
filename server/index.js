@@ -14,7 +14,18 @@ const {
 const app = express()
 const PORT = process.env.PORT || 5000
 
-app.use(cors())
+// --- NEW CORS VIP LIST ---
+app.use(cors({
+    origin: [
+        'http://localhost:5173', // Keeps local development working for you and Ruth
+        'https://zingy-pithivier-027faf.netlify.app', // Your current live Netlify link
+        'https://fosa-ascoli.com' // Your future custom domain
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}))
+// -------------------------
+
 app.use(express.json())
 
 app.get('/', (req, res) => {
