@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { publicGet } from '../lib/api'
+import axios from 'axios'
 
 const ICONS = {
   ball: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10"/><path d="M2 12h20"/></svg>,
@@ -744,6 +745,22 @@ function GallerySection() {
   const sectionRef = useRef(null)
   const [visible, setVisible] = useState(false)
   const [lightbox, setLightbox] = useState(null)
+  const [galleryImages, setGalleryImages] = useState([])
+
+  useEffect(() => {
+      const fetchGallery = async () => {
+          try {
+              // This grabs the real images from your live Render server
+              const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/gallery`);
+              if (res.data.success) {
+                  setGalleryImages(res.data.data);
+              }
+          } catch (error) {
+              console.error("Failed to fetch gallery:", error);
+          }
+      };
+      fetchGallery();
+  }, []);
 
   useEffect(() => {
     const el = sectionRef.current
@@ -764,18 +781,18 @@ function GallerySection() {
           </div>
 
           <div className="grid-3">
-            {GALLERY_IMAGES.map((img, i) => (
+            {galleryImages.map((img, i) => (
               <button key={i} onClick={() => setLightbox(i)}
                 className="card" style={{
                   overflow: 'hidden', border: 'none', padding: 0, display: 'block',
                   animation: visible ? `slideUp 0.5s ease ${i * 0.08}s both` : 'none',
                 }}>
-                <img src={img.src} alt={img.alt}
+                <img src={img.image_url} alt={img.title || 'Gallery image'}
                   style={{ width: '100%', height: 280, objectFit: 'cover', transition: 'transform 0.4s ease' }}
                   className="player-hover-zoom" />
                 <div style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   {ICONS.photo}
-                  <span style={{ fontSize: '0.85rem', color: 'var(--fg-muted)' }}>{img.alt}</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--fg-muted)' }}>{img.title || 'Untitled'}</span>
                 </div>
               </button>
             ))}
@@ -783,7 +800,7 @@ function GallerySection() {
         </div>
       </section>
 
-      {lightbox !== null && (
+      {lightbox !== null && galleryImages[lightbox] && (
         <div onClick={() => setLightbox(null)} style={{
           position: 'fixed', inset: 0, zIndex: 10000,
           background: 'oklch(0% 0 0 / 0.9)',
@@ -795,7 +812,7 @@ function GallerySection() {
             style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'oklch(100% 0 0 / 0.1)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
             {ICONS.close}
           </button>
-          <img src={GALLERY_IMAGES[lightbox].src} alt={GALLERY_IMAGES[lightbox].alt}
+          <img src={galleryImages[lightbox].image_url} alt={galleryImages[lightbox].title || 'Gallery image'}
             style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: 8 }} />
         </div>
       )}

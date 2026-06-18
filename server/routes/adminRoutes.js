@@ -321,6 +321,8 @@ router.patch('/stats', async (req, res) => {
 
 router.post('/gallery', upload.single('photo'), async (req, res) => {
     try {
+        const { title } = req.body // Catch the title from the frontend!
+
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -328,12 +330,10 @@ router.post('/gallery', upload.single('photo'), async (req, res) => {
             })
         }
 
-        // Upload to Supabase Storage bucket under the 'gallery' folder
         const photoUrl = await uploadToStorage(req.file, 'gallery')
 
-        // Save the URL to the Supabase database
         const { error } = await supabase.from('gallery').insert([
-            { image_url: photoUrl } 
+            { image_url: photoUrl, title: title || 'Untitled' } 
         ])
 
         if (error) {
