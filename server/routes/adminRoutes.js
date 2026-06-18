@@ -319,4 +319,44 @@ router.patch('/stats', async (req, res) => {
     res.json({ success: true, message: 'Stats updated successfully' })
 })
 
+router.post('/gallery', upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Gallery photo is required',
+            })
+        }
+
+        // Upload to Supabase Storage bucket under the 'gallery' folder
+        const photoUrl = await uploadToStorage(req.file, 'gallery')
+
+        // Save the URL to the Supabase database
+        const { error } = await supabase.from('gallery').insert([
+            { image_url: photoUrl } 
+        ])
+
+        if (error) {
+            console.log(error)
+            return res.status(500).json({ success: false, message: error.message })
+        }
+
+        res.json({ success: true, message: 'Photo added to gallery successfully!' })
+    } catch (err) {
+        console.log(err)
+        res.status(500).json({ success: false, message: 'Gallery image upload failed' })
+    }
+})
+
+router.delete('/gallery/:id', async (req, res) => {
+    const { error } = await supabase.from('gallery').delete().eq('id', req.params.id)
+
+    if (error) {
+        console.log(error)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+
+    res.json({ success: true, message: 'Photo deleted from gallery' })
+})
+
 module.exports = router

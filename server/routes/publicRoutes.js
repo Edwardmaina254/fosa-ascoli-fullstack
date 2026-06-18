@@ -64,4 +64,19 @@ router.get('/standings', async (req, res) => {
     res.json({ success: true, data })
 })
 
+router.get('/gallery', async (req, res) => {
+    // Assuming your table has a 'created_at' column to show newest photos first
+    const { data, error } = await supabase
+        .from('gallery')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.log(error)
+        return res.status(500).json({ success: false, message: error.message })
+    }
+
+    res.json({ success: true, data })
+})
+
 module.exports = router
