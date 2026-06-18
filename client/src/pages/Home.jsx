@@ -741,6 +741,12 @@ function StatsSection() {
   )
 }
 
+const mockGalleryData = [
+    { id: 'm1', image_url: '/images/team 2.png', comment: 'Team Huddle Before Kickoff' },
+    { id: 'm2', image_url: '/images/field.png', comment: 'Fans in the Stands' },
+    { id: 'm3', image_url: '/images/team 1.png', comment: 'Pre-season Training Camp' },
+];
+
 function GallerySection() {
   const sectionRef = useRef(null)
   const [visible, setVisible] = useState(false)
@@ -750,13 +756,16 @@ function GallerySection() {
   useEffect(() => {
       const fetchGallery = async () => {
           try {
-              // This grabs the real images from your live Render server
               const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/gallery`);
-              if (res.data.success) {
+              
+              if (res.data.success && res.data.data.length > 0) {
                   setGalleryImages(res.data.data);
+              } else {
+                  setGalleryImages(mockGalleryData);
               }
           } catch (error) {
               console.error("Failed to fetch gallery:", error);
+              setGalleryImages(mockGalleryData);
           }
       };
       fetchGallery();
