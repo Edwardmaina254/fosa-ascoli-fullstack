@@ -319,9 +319,12 @@ router.patch('/stats', async (req, res) => {
     res.json({ success: true, message: 'Stats updated successfully' })
 })
 
+// --- GALLERY ROUTES ---
+
+// 1. Upload Photo & Comment
 router.post('/gallery', upload.single('photo'), async (req, res) => {
     try {
-        const { title } = req.body // Catch the title from the frontend!
+        const { comment } = req.body // Catch the comment from the frontend
 
         if (!req.file) {
             return res.status(400).json({
@@ -330,10 +333,12 @@ router.post('/gallery', upload.single('photo'), async (req, res) => {
             })
         }
 
+        // Send file to Supabase storage bucket
         const photoUrl = await uploadToStorage(req.file, 'gallery')
 
+        // Save URL and comment to the database
         const { error } = await supabase.from('gallery').insert([
-            { image_url: photoUrl, title: title || 'Untitled' } 
+            { image_url: photoUrl, comment: comment || '' } 
         ])
 
         if (error) {
@@ -341,22 +346,28 @@ router.post('/gallery', upload.single('photo'), async (req, res) => {
             return res.status(500).json({ success: false, message: error.message })
         }
 
-        res.json({ success: true, message: 'Photo added to gallery successfully!' })
+        res.json({ success: true, message: 'Photo and comment added successfully!' })
     } catch (err) {
         console.log(err)
         res.status(500).json({ success: false, message: 'Gallery image upload failed' })
     }
 })
 
+// 2. Delete Photo
 router.delete('/gallery/:id', async (req, res) => {
-    const { error } = await supabase.from('gallery').delete().eq('id', req.params.id)
+    try {
+        const { error } = await supabase.from('gallery').delete().eq('id', req.params.id)
 
-    if (error) {
-        console.log(error)
-        return res.status(500).json({ success: false, message: error.message })
+        if (error) {
+            console.log(error)
+            return res.status(500).json({ success: false, message: error.message })
+        }
+
+        res.json({ success: true, message: 'Photo deleted from gallery' })
+    } catch (err) {
+        console.log(err)
+        res.status(500).json({ success: false, message: 'Deletion failed' })
     }
-
-    res.json({ success: true, message: 'Photo deleted from gallery' })
 })
 
 module.exports = router

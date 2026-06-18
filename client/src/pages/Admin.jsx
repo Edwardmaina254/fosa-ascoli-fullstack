@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminRequest, publicGet } from '../lib/api'
+import axios from 'axios'
 
 const ICONS = {
   dashboard: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
@@ -744,20 +745,86 @@ function StatsTab() {
 
 function GalleryTab() {
   const [toast, setToast] = useState(null)
-  const [gallery, setGallery] = useState([
-    { src: '/images/team 2.png', alt: 'Team squad' },
-    { src: '/images/team 1.png', alt: 'Training' },
-    { src: '/images/field.png', alt: 'Stadium' },
-  ])
+  const [galleryImages, setGalleryImages] = useState([])
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [commentText, setCommentText] = useState('')
 
-  const handleUpload = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    setGallery(prev => [...prev, { src: url, alt: file.name }])
-    setToast({ type: 'success', message: 'Image added to gallery' })
-    e.target.value = ''
+  const fetchGallery = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/gallery`)
+      if (res.data.success) {
+        setGalleryImages(res.data.data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch gallery:", error)
+    }
   }
+
+  useEffect(() => {
+    fetchGallery()
+  }, [])
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+    
+    // 1. Create the package
+    const formData = new FormData();
+    formData.append('photo', selectedFile); // The actual image file
+    formData.append('comment', commentText); // The text from your new input field
+
+    try {
+        // 2. Send it to your live Render backend
+        const response = await axios.post(
+            `${import.meta.env.VITE_API_URL}/api/admin/gallery`, 
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${localStorage.getItem('adminToken')}` // Don't forget the admin token!
+                }
+            }
+        );
+
+        if (response.data.success) {
+            setToast({ type: 'success', message: 'Upload worked!' });
+            // Refresh your gallery list here
+            fetchGallery();
+            setSelectedFile(null);
+            setCommentText('');
+            // reset file input
+            const fileInput = document.getElementById('gallery-upload-input');
+            if (fileInput) fileInput.value = '';
+        }
+    } catch (error) {
+        console.error('Upload failed:', error);
+        setToast({ type: 'error', message: 'Upload failed' });
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this photo?")) return;
+
+    try {
+        const response = await axios.delete(
+            `${import.meta.env.VITE_API_URL}/api/admin/gallery/${id}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            }
+        );
+
+        if (response.data.success) {
+            // Remove the image from your React state so it disappears instantly
+            setGalleryImages(galleryImages.filter(img => img.id !== id));
+            setToast({ type: 'success', message: 'Photo deleted' });
+        }
+    } catch (error) {
+        console.error('Failed to delete:', error);
+        setToast({ type: 'error', message: 'Delete failed' });
+    }
+  };
 
   return (
     <div>
@@ -765,20 +832,35 @@ function GalleryTab() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
         <div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginBottom: '0.25rem' }}>Gallery</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--fg-muted)' }}>{gallery.length} images</p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--fg-muted)' }}>{galleryImages.length} images</p>
         </div>
-        <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
-          {ICONS.upload} Upload
-          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} />
-        </label>
+      </div>
+
+      <div className="card" style={{ marginBottom: '2rem' }}>
+        <form onSubmit={handleUpload} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>Photo</label>
+            <input id="gallery-upload-input" type="file" accept="image/*" className="form-input" onChange={e => setSelectedFile(e.target.files[0])} style={{ width: '100%' }} />
+          </div>
+          <div style={{ flex: '2 1 300px' }}>
+            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600 }}>Comment</label>
+            <input type="text" className="form-input" value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add a comment..." style={{ width: '100%' }} />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={!selectedFile} style={{ height: '42px' }}>
+            {ICONS.upload} Upload
+          </button>
+        </form>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
-        {gallery.map((img, i) => (
-          <div key={i} className="card" style={{ overflow: 'hidden' }}>
-            <img src={img.src} alt={img.alt} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
-            <div style={{ padding: '0.75rem' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--fg-muted)' }}>{img.alt}</p>
+        {galleryImages.map((img) => (
+          <div key={img.id} className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
+            <img src={img.image_url} alt={img.comment || 'Gallery image'} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
+            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--fg-muted)', margin: 0, flex: 1 }}>{img.comment || 'Untitled'}</p>
+              <button onClick={() => handleDelete(img.id)} className="btn" style={{ background: 'oklch(60% 0.17 25)', color: '#fff', width: '100%', justifyContent: 'center' }}>
+                {ICONS.trash} Delete
+              </button>
             </div>
           </div>
         ))}
