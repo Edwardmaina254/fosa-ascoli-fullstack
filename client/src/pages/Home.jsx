@@ -796,12 +796,12 @@ function GallerySection() {
                   overflow: 'hidden', border: 'none', padding: 0, display: 'block',
                   animation: visible ? `slideUp 0.5s ease ${i * 0.08}s both` : 'none',
                 }}>
-                <img src={img.image_url} alt={img.title || 'Gallery image'}
+                <img src={img.image_url} alt={img.comment || 'Gallery image'}
                   style={{ width: '100%', height: 280, objectFit: 'cover', transition: 'transform 0.4s ease' }}
                   className="player-hover-zoom" />
                 <div style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   {ICONS.photo}
-                  <span style={{ fontSize: '0.85rem', color: 'var(--fg-muted)' }}>{img.title || 'Untitled'}</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--fg-muted)' }}>{img.comment}</span>
                 </div>
               </button>
             ))}
@@ -821,7 +821,7 @@ function GallerySection() {
             style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'oklch(100% 0 0 / 0.1)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
             {ICONS.close}
           </button>
-          <img src={galleryImages[lightbox].image_url} alt={galleryImages[lightbox].title || 'Gallery image'}
+          <img src={galleryImages[lightbox].image_url} alt={galleryImages[lightbox].comment || 'Gallery image'}
             style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: 8 }} />
         </div>
       )}
